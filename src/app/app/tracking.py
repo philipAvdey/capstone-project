@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # encoding: utf-8
-# 颜色跟踪 + 云台追踪 + 车体追踪 + RGB灯控制（优化版：支持独立云台追踪，大模型触发单车体追踪，云台+车体联合追踪时云台PID控制小车运动，5秒未检测到目标自动退出）
+# Color tracking + pan-tilt tracking + chassis tracking + RGB light control
+# (Optimized version: supports independent pan-tilt tracking, AI model triggered single chassis tracking,
+# pan-tilt PID controls robot movement during combined tracking, auto-exit after 5s if no target detected)
 
 import os
 import cv2
@@ -30,7 +32,7 @@ class ObjectTracker:
     def __init__(self, color, node, set_color, set_status=False):
         self.node = node
         self.y_stop = 120
-        self.pro_size = (320, 240)  # 图像处理分辨率
+        self.pro_size = (320, 240)  # Image processing resolution
         self.last_color_circle = None
         self.lost_target_count = 0
 
@@ -40,7 +42,7 @@ class ObjectTracker:
             self.target_lab, self.target_rgb = color
         self.lab_data = yaml_handle.get_yaml_data(yaml_handle.lab_file_path)
 
-        # 颜色RGB值定义
+        # Color RGB value definitions
         self.range_rgb = {
             'red': (255, 0, 0),
             'blue': (0, 0, 255),
@@ -51,11 +53,11 @@ class ObjectTracker:
 
         self.threshold = 0.1  # 颜色检测阈值
 
-        # 云台PID参数
+        # Pan-tilt PID parameters
         self.servo_x_pid = pid.PID(P=0.25, I=0.05, D=0.009)
         self.servo_y_pid = pid.PID(P=0.25, I=0.05, D=0.009)
 
-        # 舵机参数
+        # Servo parameters
         self.servo_x = 1500
         self.servo_y = 1500
         self.servo_min_x = 800
@@ -63,24 +65,24 @@ class ObjectTracker:
         self.servo_min_y = 1200
         self.servo_max_y = 1900
 
-        self.pan_tilt_x_threshold = 15  # 云台X轴死区
-        self.pan_tilt_y_threshold = 15  # 云台Y轴死区
+        self.pan_tilt_x_threshold = 15  # Pan-tilt X-axis deadzone
+        self.pan_tilt_y_threshold = 15  # Pan-tilt Y-axis deadzone
 
     def update_pid(self, x, y, img_w, img_h):
-        """更新云台PID，控制舵机位置，并返回PID输出用于小车运动"""
+        """Update pan-tilt PID, control servo position, and return PID output for robot movement"""
         if abs(x - img_w / 2) < self.pan_tilt_x_threshold:
             x = img_w / 2
         if abs(y - img_h / 2) < self.pan_tilt_y_threshold:
             y = img_h / 2
 
-        # X轴PID（水平方向）
+        # X-axis PID (horizontal direction)
         self.servo_x_pid.SetPoint = img_w / 2
         self.servo_x_pid.update(x)
         servo_x_output = int(self.servo_x_pid.output)
         self.servo_x += servo_x_output
         self.servo_x = np.clip(self.servo_x, self.servo_min_x, self.servo_max_x)
 
-        # Y轴PID（垂直方向）
+        # Y-axis PID (vertical direction)
         self.servo_y_pid.SetPoint = img_h / 2
         self.servo_y_pid.update(y)
         servo_y_output = int(self.servo_y_pid.output)
@@ -90,13 +92,13 @@ class ObjectTracker:
         return self.servo_x, self.servo_y, self.servo_x_pid.output, self.servo_y_pid.output
 
     def __call__(self, image, result_image, threshold):
-        """处理图像，检测目标并返回结果"""
+        """Process image, detect target and return result"""
         h, w = image.shape[:2]
         image = cv2.resize(image, self.pro_size)
         image = cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
         image = cv2.GaussianBlur(image, (5, 5), 5)
 
-        # 根据手动或大模型设置的目标颜色确定阈值范围
+        # Determine threshold range based on manual or AI model set target color
         if self.set_status == False:
             min_color = [int(self.target_lab[0] - 50 * threshold * 2),
                          int(self.target_lab[1] - 50 * threshold),
@@ -114,7 +116,7 @@ class ObjectTracker:
                          self.lab_data[self.set_color]['max'][2]]
             target_color = 0, min_color, max_color
 
-        # 图像处理：生成掩膜、腐蚀、膨胀、轮廓检测
+        # Image processing: generate mask, erode, dilate, contour detection
         mask = cv2.inRange(image, tuple(target_color[1]), tuple(target_color[2]))
         eroded = cv2.erode(mask, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)))
         dilated = cv2.dilate(eroded, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)))
@@ -125,7 +127,7 @@ class ObjectTracker:
         target_pos = None
         target_radius = 0
 
-        # 检测到有效轮廓时，选择目标
+        # When valid contour detected, select target
         if len(contour_area) > 0:
             if self.last_color_circle is None:
                 contour, area = max(contour_area, key=lambda c_a: c_a[1])
@@ -139,7 +141,7 @@ class ObjectTracker:
                 if dist < 100:
                     circle = circle
 
-        # 如果检测到目标，绘制圆圈并更新位置
+        # If target detected, draw circle and update position
         if circle is not None:
             self.lost_target_count = 0
             (x, y), r = circle
@@ -189,15 +191,15 @@ class OjbectTrackingNode(Node):
         self.image_queue = queue.Queue(2)
         self.exit_funcation = False
 
-        self.last_target_time = time.time()  # 记录最后检测到目标的时间
+        self.last_target_time = time.time()  # Record last time target was detected
 
-        # 云台
+        # Pan-tilt
         self.servo_pub = self.create_publisher(SetPWMServoState, 'ros_robot_controller/pwm_servo/set_state', 10)
         self.servo_state = [1500, 1500]
 
-        # 底盘
-        self.pid_yaw = pid.PID(0.008, 0.003, 0.0001)  # 底盘Yaw轴PID
-        self.pid_dist = pid.PID(0.004, 0.003, 0.00001)  # 底盘距离PID
+        # Chassis
+        self.pid_yaw = pid.PID(0.008, 0.003, 0.0001)  # Chassis Yaw axis PID
+        self.pid_dist = pid.PID(0.004, 0.003, 0.00001)  # Chassis distance PID
         self.x_stop = 320  # 图像中心X坐标
         self.y_stop = 400  # 图像中心Y坐标
 

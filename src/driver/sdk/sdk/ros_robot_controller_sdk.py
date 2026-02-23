@@ -10,7 +10,7 @@ import serial
 import threading
 
 class PacketControllerState(enum.IntEnum):
-    # 通信协议的格式
+    # Communication protocol format
     # 0xAA 0x55 Length Function ID Data Checksum
     PACKET_CONTROLLER_STATE_STARTBYTE1 = 0
     PACKET_CONTROLLER_STATE_STARTBYTE2 = 1
@@ -21,23 +21,23 @@ class PacketControllerState(enum.IntEnum):
     PACKET_CONTROLLER_STATE_CHECKSUM = 6
 
 class PacketFunction(enum.IntEnum):
-    # 可通过串口实现的控制功能
+    # Control functions implemented via serial port
     PACKET_FUNC_SYS = 0
-    PACKET_FUNC_LED = 1  # LED控制
-    PACKET_FUNC_BUZZER = 2  # 蜂鸣器控制
-    PACKET_FUNC_MOTOR = 3  # 电机控制
-    PACKET_FUNC_PWM_SERVO = 4  # PWM舵机控制, 板子上从里到外依次为1-4
-    PACKET_FUNC_BUS_SERVO = 5  # 总线舵机控制
-    PACKET_FUNC_KEY = 6  # 按键获取
-    PACKET_FUNC_IMU = 7  # IMU获取
-    PACKET_FUNC_GAMEPAD = 8  # 手柄获取
-    PACKET_FUNC_SBUS = 9  # 航模遥控获取
-    PACKET_FUNC_OLED = 10 # OLED 显示内容设置
-    PACKET_FUNC_RGB = 11 # 设置RGB颜色
+    PACKET_FUNC_LED = 1  # LED control
+    PACKET_FUNC_BUZZER = 2  # Buzzer control
+    PACKET_FUNC_MOTOR = 3  # Motor control
+    PACKET_FUNC_PWM_SERVO = 4  # PWM servo control, board servos numbered 1-4 from inside to outside
+    PACKET_FUNC_BUS_SERVO = 5  # Bus servo control
+    PACKET_FUNC_KEY = 6  # Button acquisition
+    PACKET_FUNC_IMU = 7  # IMU acquisition
+    PACKET_FUNC_GAMEPAD = 8  # Gamepad acquisition
+    PACKET_FUNC_SBUS = 9  # RC controller acquisition
+    PACKET_FUNC_OLED = 10 # OLED display content setting
+    PACKET_FUNC_RGB = 11 # Set RGB color
     PACKET_FUNC_NONE = 12
 
 class PacketReportKeyEvents(enum.IntEnum):
-    # 按键的不同状态
+    # Different button states
     KEY_EVENT_PRESSED = 0x01
     KEY_EVENT_LONGPRESS = 0x02
     KEY_EVENT_LONGPRESS_REPEAT = 0x04
@@ -67,7 +67,7 @@ crc8_table = [
 ]
 
 def checksum_crc8(data):
-    # 校验
+    # Checksum/verification
     check = 0
     for b in data:
         check = crc8_table[check ^ b]

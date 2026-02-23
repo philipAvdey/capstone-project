@@ -48,7 +48,7 @@ class RosRobotController(Node):
         self.create_service(GetPWMServoState, '~/pwm_servo/get_state', self.get_pwm_servo_state)
         self.create_subscription(RGBStates, '~/set_rgb', self.set_rgb_states, 10)
 
-        # 加载并设置舵机偏移量从 YAML 文件
+        # Load and set servo offsets from YAML file
         self.load_servo_offsets()
 
         self.board.pwm_servo_set_offset(1, 0)
@@ -61,31 +61,31 @@ class RosRobotController(Node):
     
     def load_servo_offsets(self):
         """
-        从 YAML 文件中读取舵机偏差设置。
+        Read servo deviation settings from YAML file.
         """
         config_path = '/home/ubuntu/software/Servo_upper_computer/servo_config.yaml'
         try:
             with open(config_path, 'r') as file:
                 config = yaml.safe_load(file)
 
-            # 确保config是字典
+            # Ensure config is a dictionary
             if not isinstance(config, dict):
-                self.get_logger().error(f"YAML 配置文件格式错误: {config_path}，应为字典格式。")
+                self.get_logger().error(f"YAML configuration file format error: {config_path}, should be dictionary format.")
                 return
 
-            # 遍历ID1到ID4并设置偏移量
+            # Iterate through ID1 to ID4 and set offsets
             for servo_id in range(1, 5):
-                offset = config.get(servo_id, 0)  # 如果未找到，默认偏移量为0
+                offset = config.get(servo_id, 0)  # If not found, default offset is 0
                 try:
                     self.board.pwm_servo_set_offset(servo_id, offset)
-                    self.get_logger().info(f"已设置舵机 {servo_id} 的偏移量为 {offset}")
+                    self.get_logger().info(f"Set servo {servo_id} offset to {offset}")
                 except Exception as e:
-                    self.get_logger().error(f"设置舵机 {servo_id} 偏移量时出错: {e}")
+                    self.get_logger().error(f"Error setting servo {servo_id} offset: {e}")
 
         except FileNotFoundError:
-            self.get_logger().error(f"配置文件未找到: {config_path}")
+            self.get_logger().error(f"Configuration file not found: {config_path}")
         except yaml.YAMLError as e:
-            self.get_logger().error(f"解析 YAML 文件时出错: {e}")
+            self.get_logger().error(f"Error parsing YAML file: {e}")
         except Exception as e:
             self.get_logger().error(f"读取配置文件时出错: {e}")
             

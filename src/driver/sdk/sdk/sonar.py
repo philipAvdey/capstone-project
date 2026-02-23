@@ -2,7 +2,7 @@ import sys
 import time
 from smbus2 import SMBus, i2c_msg
 
-# 幻尔科技iic超声波库
+# Hiwonder IIC ultrasonic library
 
 if sys.version_info.major == 2:
     print('Please run this program with python3!')
@@ -47,7 +47,7 @@ class Sonar:
         except BaseException as e:
             print(e)
 
-    def show(self): #占位，与扩展板RGB保持调用一致
+    def show(self): # Placeholder, maintains call consistency with expansion board RGB
         pass
 
     def numPixels(self):
