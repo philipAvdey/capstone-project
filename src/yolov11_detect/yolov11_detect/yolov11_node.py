@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 #coding=utf8
-# yolo pt识别节点
+# YOLO pt detection node
 
 import cv2
 import os
@@ -93,7 +93,7 @@ class yoloNode(Node):
 
         self.start_time = time.time()
         self.frame_count = 0
-        self.fps = fps.FPS()  # fps计算器
+        self.fps = fps.FPS()  # FPS calculator
 
         self.bridge = CvBridge()
         self.image_queue = queue.Queue(maxsize=2)
@@ -111,8 +111,8 @@ class yoloNode(Node):
 
         self.classes = self.get_parameter('classes').value
 
-        self.create_service(Trigger, '~/start', self.start_srv_callback)  # 进入玩法
-        self.create_service(Trigger, '~/stop', self.stop_srv_callback)  # 退出玩法
+        self.create_service(Trigger, '~/start', self.start_srv_callback)  # Enter/start game mode
+        self.create_service(Trigger, '~/stop', self.stop_srv_callback)  # Exit/stop game mode
 
         self.image_sub = self.create_subscription(Image, 'image_raw', self.image_callback, 1)
 

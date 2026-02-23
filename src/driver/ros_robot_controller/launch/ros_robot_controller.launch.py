@@ -20,7 +20,7 @@ def generate_launch_description():
     ])
 
 if __name__ == '__main__':
-    # 创建一个LaunchDescription对象(create a LaunchDescription object)
+    # Create a LaunchDescription object
     ld = generate_launch_description()
 
     ls = LaunchService()

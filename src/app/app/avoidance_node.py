@@ -34,12 +34,12 @@ class AvoidanceNode(Node):
         super().__init__(name, allow_undeclared_parameters=True, automatically_declare_parameters_from_overrides=True)
         self.sonar = Sonar()
         self.running = True
-        self.heart = None #  心跳包对象
+        self.heart = None #  Heartbeat package object
         
         self.name = name
         self.image_sub = None
         self.sonar_sub = None
-        self.threshold = 30  # 厘米
+        self.threshold = 30  # centimeters
         self.speed = 0.4 
         self.distance = 500
         self.distance_data = []
@@ -50,20 +50,20 @@ class AvoidanceNode(Node):
         self.stopMotor = True
         self.lock = threading.RLock()
         
-        self.result_publisher = self.create_publisher(Image, '~/image_result', 1)  # 图像处理结果发布(publish the image processing result)
-        self.mecanum_pub = self.create_publisher(Twist, 'cmd_vel', 1)  # 底盘控制(chassis control)
+        self.result_publisher = self.create_publisher(Image, '~/image_result', 1)  # Publish image processing result
+        self.mecanum_pub = self.create_publisher(Twist, 'cmd_vel', 1)  # Chassis control
         self.sonar_rgb_pub = self.create_publisher(RGBStates, 'sonar_controller/set_rgb', 10)
         
-        self.create_service(Trigger, '~/enter', self.enter_srv_callback)  # 进入玩法(enter the game)
-        self.create_service(Trigger, '~/exit', self.exit_srv_callback)  # 退出玩法(exit the game)
-        self.create_service(SetBool, '~/set_running', self.set_running_srv_callback)  # 开启玩法(start the game)
-        self.create_service(SetFloat64List, '~/set_param', self.set_parameters_srv_callback)  # 参数设置(set parameter)
-        self.heart = Heart(self, self.name + '/heartbeat', 5, lambda _: self.exit_srv_callback(request=Trigger.Request(), response=Trigger.Response()))  # 心跳包(heartbeat package)
+        self.create_service(Trigger, '~/enter', self.enter_srv_callback)  # Enter the game/mode
+        self.create_service(Trigger, '~/exit', self.exit_srv_callback)  # Exit the game/mode
+        self.create_service(SetBool, '~/set_running', self.set_running_srv_callback)  # Start the game/mode
+        self.create_service(SetFloat64List, '~/set_param', self.set_parameters_srv_callback)  # Set parameters
+        self.heart = Heart(self, self.name + '/heartbeat', 5, lambda _: self.exit_srv_callback(request=Trigger.Request(), response=Trigger.Response()))  # Heartbeat package
      
         self.create_service(Trigger, '~/init_finish', self.get_node_state)
         self.get_logger().info('\033[1;32m%s\033[0m' % 'start')
 
-        self.exit_allowed = True  # 添加标志位，允许执行 exit_srv_callback
+        self.exit_allowed = True  # Add flag to allow execution of exit_srv_callback
         
     
     def get_node_state(self, request, response):
@@ -85,11 +85,11 @@ class AvoidanceNode(Node):
         
         
         if self.image_sub is None:            
-            self.image_sub = self.create_subscription(Image, 'image_raw', self.image_callback, 1)  # 摄像头订阅(subscribe to the camera)
+            self.image_sub = self.create_subscription(Image, 'image_raw', self.image_callback, 1)  # Subscribe to camera
         if self.sonar_sub is None:
             self.sonar_sub = self.create_subscription(Int32, 'sonar_controller/get_distance', self.distance_callback, 10)
         self.reset_value()
-        self.exit_allowed = True  # 允许执行 exit_srv_callback
+        self.exit_allowed = True  # Allow execution of exit_srv_callback
         response.success = True
         response.message = "enter"
         return response
@@ -98,15 +98,15 @@ class AvoidanceNode(Node):
         self.get_logger().info('\033[1;32m%s\033[0m' % 'avoidance exit')
 
         with self.lock:
-            if not self.exit_allowed:  # 检查是否允许执行
+            if not self.exit_allowed:  # Check if execution is allowed
                 self.get_logger().info("exit_srv_callback blocked by flag.")
                 response.success = True
                 response.message = "exit blocked"
                 return response
 
-            self.exit_allowed = False  # 阻止再次执行
+            self.exit_allowed = False  # Prevent re-execution
 
-            # 以下是原始的退出服务逻辑
+            # Below is the original exit service logic
             self.is_running = False
             self.reset_value()
             self.mecanum_pub.publish(Twist())
@@ -120,7 +120,7 @@ class AvoidanceNode(Node):
                     self.sonar_sub = None
             except Exception as e:
                 self.get_logger().error(str(e))
-           # 停止并清理心跳包
+           # Stop and cleanup heartbeat
             if self.heart is not None:
                 self.heart.destroy()
                 self.heart = None
@@ -148,7 +148,7 @@ class AvoidanceNode(Node):
     
     def set_parameters_srv_callback(self, request, response):
         '''
-        设置避障阈值，速度参数(set the threshold of obstacle avoidance and speed)
+        Set obstacle avoidance threshold and speed parameters
         :param req:
         :return:
         '''
@@ -186,17 +186,17 @@ class AvoidanceNode(Node):
         
         twist = Twist()
         if self.is_running:                
-            if self.distance / 10.0 <= self.threshold:   # 检测是否达到距离阈值(check if distance threshold is reached)
+            if self.distance / 10.0 <= self.threshold:   # Check if distance threshold is reached
                 twist.angular.z = 11.0
 
-                if self.turn: # 做一个判断防止重复发指令(implement a check to prevent duplicate commands)
+                if self.turn: # Implement a check to prevent duplicate commands
                     self.turn = False
                     self.forward = True
                     self.stopMotor = True
             else:
                 twist.linear.x = float(self.speed)
                 twist.angular.z = 0.0
-                if self.forward: # 做一个判断防止重复发指令(implement a check to prevent duplicate commands)
+                if self.forward: # Implement a check to prevent duplicate commands
                     self.turn = True
                     self.forward = False
                     self.stopMotor = True
