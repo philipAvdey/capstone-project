@@ -389,78 +389,79 @@ class RedBallTracker:
         try:
             while self.running:
                 # Capture frame
-                ret, frame = self.camera.read()
-                if not ret:
-                    print("Failed to capture frame from camera")
-                    break
-                
-                # Detect neon green ball
-                detection, mask = self.detect_red_ball(frame)
-                
-                if detection is not None:
-                    ball_x, ball_y, radius = detection
-                    self.lost_target_count = 0
-                    
-                    # Smooth detection to prevent oscillation
-                    smooth_x, smooth_y, smooth_r = self.smooth_detection(ball_x, ball_y, radius)
-                    
-                    # Update servo tracking (always track with camera)
-                    self.update_servo_tracking(smooth_x, smooth_y, frame.shape[1], frame.shape[0])
-                    
-                    # Update chassis tracking (move robot toward ball)
-                    self.update_chassis_tracking(smooth_x, smooth_y, smooth_r, frame.shape[1], frame.shape[0])
-                    
-                    # Draw detection on frame
-                    if self.show_debug:
-                        # Draw raw detection (red)
-                        cv2.circle(frame, (ball_x, ball_y), radius, (0, 0, 255), 2)
-                        # Draw smoothed detection (green)
-                        cv2.circle(frame, (int(smooth_x), int(smooth_y)), int(smooth_r), (0, 255, 0), 3)
-                        cv2.circle(frame, (int(smooth_x), int(smooth_y)), 5, (0, 255, 0), -1)
-                        
-                        # Display tracking info
-                        info_text = [
-                            f"Raw: ({ball_x}, {ball_y}) r={radius}",
-                            f"Smooth: ({int(smooth_x)}, {int(smooth_y)}) r={int(smooth_r)}",
-                            f"Servo X: {self.servo_x}, Y: {self.servo_y}",
-                            f"History: {len(self.detection_history)} frames",
-                            f"Status: TRACKING"
-                        ]
-                        for i, text in enumerate(info_text):
-                            cv2.putText(frame, text, (10, 30 + i*25), 
-                                      cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-                else:
-                    # Target lost
-                    self.lost_target_count += 1
-                    
-                    # Clear detection history when target is lost
-                    if self.lost_target_count > 3:
-                        self.detection_history.clear()
-                    
-                    if self.lost_target_count > self.lost_target_threshold:
-                        # Stop robot after losing target for too long
-                        self.stop_robot()
-                        
-                        if self.show_debug:
-                            cv2.putText(frame, "Status: TARGET LOST - STOPPED", (10, 30),
-                                      cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-                    else:
-                        if self.show_debug:
-                            cv2.putText(frame, f"Status: SEARCHING ({self.lost_target_count})", (10, 30),
-                                      cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 165, 255), 2)
-                
-                # Show debug windows
-                if self.show_debug:
-                    cv2.imshow("Neon Green Ball Tracking", frame)
-                    cv2.imshow("Detection Mask", mask)
-                    
-                    key = cv2.waitKey(1) & 0xFF
-                    if key == ord('q'):
-                        print("\nQuitting...")
+                if self.camera is not None:
+                    ret, frame = self.camera.read()
+                    if not ret:
+                        print("Failed to capture frame from camera")
                         break
                 
-                # Small delay to prevent CPU overload
-                time.sleep(0.01)
+                    # Detect neon green ball
+                    detection, mask = self.detect_red_ball(frame)
+                    
+                    if detection is not None:
+                        ball_x, ball_y, radius = detection
+                        self.lost_target_count = 0
+                        
+                        # Smooth detection to prevent oscillation
+                        smooth_x, smooth_y, smooth_r = self.smooth_detection(ball_x, ball_y, radius)
+                        
+                        # Update servo tracking (always track with camera)
+                        self.update_servo_tracking(smooth_x, smooth_y, frame.shape[1], frame.shape[0])
+                        
+                        # Update chassis tracking (move robot toward ball)
+                        self.update_chassis_tracking(smooth_x, smooth_y, smooth_r, frame.shape[1], frame.shape[0])
+                        
+                        # Draw detection on frame
+                        if self.show_debug:
+                            # Draw raw detection (red)
+                            cv2.circle(frame, (ball_x, ball_y), radius, (0, 0, 255), 2)
+                            # Draw smoothed detection (green)
+                            cv2.circle(frame, (int(smooth_x), int(smooth_y)), int(smooth_r), (0, 255, 0), 3)
+                            cv2.circle(frame, (int(smooth_x), int(smooth_y)), 5, (0, 255, 0), -1)
+                            
+                            # Display tracking info
+                            info_text = [
+                                f"Raw: ({ball_x}, {ball_y}) r={radius}",
+                                f"Smooth: ({int(smooth_x)}, {int(smooth_y)}) r={int(smooth_r)}",
+                                f"Servo X: {self.servo_x}, Y: {self.servo_y}",
+                                f"History: {len(self.detection_history)} frames",
+                                f"Status: TRACKING"
+                            ]
+                            for i, text in enumerate(info_text):
+                                cv2.putText(frame, text, (10, 30 + i*25), 
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                    else:
+                        # Target lost
+                        self.lost_target_count += 1
+                        
+                        # Clear detection history when target is lost
+                        if self.lost_target_count > 3:
+                            self.detection_history.clear()
+                        
+                        if self.lost_target_count > self.lost_target_threshold:
+                            # Stop robot after losing target for too long
+                            self.stop_robot()
+                            
+                            if self.show_debug:
+                                cv2.putText(frame, "Status: TARGET LOST - STOPPED", (10, 30),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                        else:
+                            if self.show_debug:
+                                cv2.putText(frame, f"Status: SEARCHING ({self.lost_target_count})", (10, 30),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 165, 255), 2)
+                
+                    # Show debug windows
+                    if self.show_debug:
+                        cv2.imshow("Neon Green Ball Tracking", frame)
+                        cv2.imshow("Detection Mask", mask)
+                        
+                        key = cv2.waitKey(1) & 0xFF
+                        if key == ord('q'):
+                            print("\nQuitting...")
+                            break
+                    
+                    # Small delay to prevent CPU overload
+                    time.sleep(0.01)
                 
         except KeyboardInterrupt:
             print("\nInterrupted by user")
@@ -478,7 +479,8 @@ class RedBallTracker:
         self.set_servo_position(1500, 1500)
         
         # Release camera
-        self.camera.release()
+        if self.camera is not None:
+            self.camera.release()
         
         # Close windows
         if self.show_debug:
