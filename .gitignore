@@ -1,3 +1,8 @@
 src/driver/controller/controller/core
 
 src/large_models/large_models/resources/models/FastSAM-x.pt
+
+utils/photos-for-processing/pre-processed-photos/*.jpg
+utils/photos-for-processing/post-processed-photos/*.jpg
+
+.vscode
