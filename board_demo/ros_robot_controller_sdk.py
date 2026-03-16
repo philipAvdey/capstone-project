@@ -105,7 +105,7 @@ class Board:
         self.port = serial.Serial(None, baudrate, timeout=timeout)
         self.port.rts = False
         self.port.dtr = False
-        self.port.setPort(device)
+        self.port.port = device
         self.port.open()
 
         self.state = PacketControllerState.PACKET_CONTROLLER_STATE_STARTBYTE1
@@ -312,7 +312,7 @@ class Board:
             return None
 
     def buf_write(self, func, data):
-        buf = [0xAA, 0x55, int(func)]
+        buf = bytearray([0xAA, 0x55, int(func)])
         buf.append(len(data))
         buf.extend(data)
         buf.append(checksum_crc8(bytes(buf[2:])))
