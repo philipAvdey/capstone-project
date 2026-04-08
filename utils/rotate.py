@@ -7,7 +7,7 @@ Supports: .jpg, .jpeg, .png, .webp, .bmp, .tiff, .tif
 from pathlib import Path
 from PIL import Image
  
-FOLDER = Path("training-photos/goal")
+FOLDER = Path("photos-for-processing")
 SUPPORTED = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff", ".tif"}
  
  

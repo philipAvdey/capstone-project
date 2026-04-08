@@ -1,0 +1,8 @@
+path: "/Users/philip/Desktop/College/Spring2026/capstone/utils/dataset"
+
+train: images/train
+val: images/val
+
+names:
+  0: soccer-ball
+  1: goal
